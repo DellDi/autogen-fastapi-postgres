@@ -13,11 +13,12 @@ from autogen_core.models import ChatCompletionClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.models import ChatMessage, ChatSession
-from api.database import get_db
+from agentchat_fastapi.api.models import ChatMessage, ChatSession
+from agentchat_fastapi.api.database import get_db
 
 # 模型配置路径
 model_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "model_config.yaml")
+
 
 async def get_agent(
     session_id: Optional[uuid.UUID] = None,
@@ -33,7 +34,7 @@ async def get_agent(
     agent = AssistantAgent(
         name="assistant",
         model_client=model_client,
-        system_message="You are a helpful assistant.",
+        system_message="You are a helpful assistant."
     )
     
     # 如果提供了会话ID，则从数据库加载状态
@@ -75,6 +76,7 @@ class ChatSessionService:
         )
         db.add(session)
         await db.flush()
+        # 不再需要显式提交事务，由调用方管理
         return session
     
     @staticmethod
@@ -172,7 +174,7 @@ class ChatMessageService:
         message_type: str = "TextMessage",
         thought: Optional[str] = None,
         models_usage: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        meta_data: Optional[Dict[str, Any]] = None
     ) -> ChatMessage:
         """创建新消息"""
         message = ChatMessage(
@@ -182,7 +184,7 @@ class ChatMessageService:
             type=message_type,
             thought=thought,
             models_usage=models_usage,
-            metadata=metadata or {}
+            meta_data=meta_data or {}
         )
         db.add(message)
         await db.flush()
@@ -199,34 +201,88 @@ class ChatMessageService:
         db: AsyncSession, session_id: uuid.UUID, message: TextMessage
     ) -> ChatMessage:
         """从TextMessage创建消息"""
+        # 记录详细的调试信息
+        print(f"Creating message from TextMessage: {type(message)}")
+        print(f"Message attributes: {dir(message)}")
+        
         # 尝试从message中提取thought字段
         thought = None
         if hasattr(message, 'thought'):
             thought = message.thought
+            print(f"Found thought: {thought}")
         
-        return await ChatMessageService.create_message(
-            db=db,
-            session_id=session_id,
-            source=message.source,
-            content=message.content,
-            message_type=message.type,
-            thought=thought,
-            models_usage=message.models_usage,
-            metadata=message.metadata
-        )
+        # 处理models_usage，确保它是可序列化的
+        models_usage = None
+        if hasattr(message, 'models_usage') and message.models_usage:
+            models_usage = message.models_usage
+            print(f"Models usage type: {type(models_usage)}")
+            
+            if not isinstance(models_usage, dict):
+                # 如果是RequestUsage对象，转换为字典
+                try:
+                    if hasattr(models_usage, '__dict__'):
+                        models_usage = models_usage.__dict__
+                        print(f"Converted models_usage using __dict__: {models_usage}")
+                    elif hasattr(models_usage, 'prompt_tokens') and hasattr(models_usage, 'completion_tokens'):
+                        models_usage = {
+                            'prompt_tokens': models_usage.prompt_tokens,
+                            'completion_tokens': models_usage.completion_tokens,
+                            'total_tokens': getattr(models_usage, 'total_tokens', 
+                                                models_usage.prompt_tokens + models_usage.completion_tokens)
+                        }
+                        print(f"Converted models_usage manually: {models_usage}")
+                    else:
+                        # 如果无法转换，设置为None
+                        print(f"Could not convert models_usage, setting to None")
+                        models_usage = None
+                except Exception as e:
+                    print(f"Error converting models_usage: {str(e)}")
+                    models_usage = None
+        
+        # 获取元数据，统一使用meta_data字段名
+        meta_data = {}
+        if hasattr(message, 'metadata'):
+            meta_data = message.metadata
+            print(f"Found metadata: {meta_data}")
+        
+        try:
+            # 创建消息
+            chat_message = await ChatMessageService.create_message(
+                db=db,
+                session_id=session_id,
+                source=message.source if hasattr(message, 'source') else "unknown",
+                content=message.content if hasattr(message, 'content') else "",
+                message_type=message.type if hasattr(message, 'type') else "TextMessage",
+                thought=thought,
+                models_usage=models_usage,
+                meta_data=meta_data
+            )
+            print(f"Created chat message: {chat_message.id}")
+            return chat_message
+        except Exception as e:
+            import traceback
+            print(f"Error creating message: {str(e)}")
+            print(traceback.format_exc())
+            raise
     
     @staticmethod
     async def get_session_messages(
-        db: AsyncSession, session_id: uuid.UUID, limit: int = 100, offset: int = 0
+        db: AsyncSession,
+        session_id: uuid.UUID,
+        limit: int = 100,
+        offset: int = 0,
+        source: Optional[str] = None
     ) -> List[ChatMessage]:
         """获取会话消息"""
-        result = await db.execute(
-            select(ChatMessage)
-            .where(ChatMessage.session_id == session_id)
-            .order_by(ChatMessage.created_at)
-            .limit(limit)
-            .offset(offset)
-        )
+        query = select(ChatMessage).where(ChatMessage.session_id == session_id)
+        
+        # 如果指定了source，添加过滤条件
+        if source:
+            query = query.where(ChatMessage.source == source)
+            
+        # 按照创建时间升序排列，确保消息按照正确的顺序显示
+        query = query.order_by(ChatMessage.created_at.asc()).limit(limit).offset(offset)
+        result = await db.execute(query)
         return list(result.scalars().all())
     
     @staticmethod
@@ -239,13 +295,13 @@ class ChatMessageService:
         """转换为TextMessage列表"""
         text_messages = []
         for msg in messages:
-            # 创建基本的TextMessage
+            # 创建TextMessage
             text_msg = TextMessage(
                 source=msg.source,
                 content=msg.content,
                 type=msg.type,
                 models_usage=msg.models_usage,
-                metadata=msg.metadata
+                metadata=msg.meta_data  # 直接使用meta_data字段
             )
             
             # 如果有thought字段，添加到TextMessage中

@@ -7,12 +7,9 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy import ForeignKey, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSON, UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-
-class Base(DeclarativeBase):
-    """基础模型类"""
-    pass
+from agentchat_fastapi.api.database import Base
 
 
 class ChatSession(Base):

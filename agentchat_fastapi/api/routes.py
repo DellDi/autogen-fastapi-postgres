@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken
 
-from api.services import get_agent
-from api.models import ChatSession
-from api.services import ChatMessageService, ChatSessionService
-from api.database import get_db
+from agentchat_fastapi.api.services import get_agent
+from agentchat_fastapi.api.models import ChatSession
+from agentchat_fastapi.api.services import ChatMessageService, ChatSessionService
+from agentchat_fastapi.api.database import get_db
 
 router = APIRouter(tags=["会话管理"])
 
@@ -37,9 +37,27 @@ async def create_session(
 ) -> Dict[str, Any]:
     """创建新会话"""
     try:
-        session = await ChatSessionService.create_session(db)
+        # 使用事务包装创建会话操作
+        session = ChatSession(
+            name="新会话",
+            agent_state={
+                "type": "AssistantAgentState",
+                "version": "1.0.0",
+                "llm_context": {
+                    "messages": []
+                }
+            }
+        )
+        db.add(session)
+        await db.flush()
+        await db.commit()  # 显式提交事务
         return session.to_dict()
     except Exception as e:
+        # 记录详细错误信息
+        import traceback
+        error_detail = f"{str(e)}\n{traceback.format_exc()}"
+        print(f"创建会话错误: {error_detail}")
+        await db.rollback()  # 显式回滚事务
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -120,6 +138,18 @@ async def chat(
         agent = await get_agent(session_id, db)
         response = await agent.on_messages(messages=[request], cancellation_token=CancellationToken())
         
+        # 记录详细的调试信息
+        print(f"Response type: {type(response)}")
+        print(f"Response content: {response.content if hasattr(response, 'content') else 'No content'}")
+        print(f"Response attributes: {dir(response)}")
+        if hasattr(response, 'models_usage'):
+            print(f"Models usage type: {type(response.models_usage)}")
+            print(f"Models usage attributes: {dir(response.models_usage) if response.models_usage else 'None'}")
+        if hasattr(response, 'metadata') and response.metadata:
+            print(f"Metadata: {response.metadata}")
+        if hasattr(response, 'meta_data') and response.meta_data:
+            print(f"Meta data: {response.meta_data}")
+        
         # 保存智能体状态
         state = await agent.save_state()
         
@@ -137,10 +167,32 @@ async def chat(
         assert isinstance(response.chat_message, TextMessage)
         await ChatMessageService.create_from_text_message(db, session_id, response.chat_message)
         
-        return response.chat_message.to_dict()
-    except HTTPException:
-        raise
+        # 提交事务，确保所有更改都被保存到数据库
+        await db.commit()
+        
+        # 手动创建响应字典，而不是调用to_dict方法
+        if hasattr(response.chat_message, 'to_dict'):
+            # 如果对象有to_dict方法，使用它
+            result = response.chat_message.to_dict()
+        else:
+            # 否则手动创建字典
+            result = {
+                "content": response.chat_message.content if hasattr(response.chat_message, 'content') else "",
+                "source": response.chat_message.source if hasattr(response.chat_message, 'source') else "assistant",
+                "type": response.chat_message.type if hasattr(response.chat_message, 'type') else "TextMessage",
+                "models_usage": response.chat_message.models_usage if hasattr(response.chat_message, 'models_usage') else None,
+                "metadata": response.chat_message.metadata if hasattr(response.chat_message, 'metadata') else {}
+            }
+            # 添加thought字段（如果存在）
+            if hasattr(response.chat_message, 'thought') and response.chat_message.thought:
+                result["thought"] = response.chat_message.thought
+        
+        return result
     except Exception as e:
+        # 记录详细的错误信息
+        import traceback
+        print(f"Error in chat endpoint: {str(e)}")
+        print(traceback.format_exc())
         error_message = {
             "type": "error",
             "content": f"Error: {str(e)}",

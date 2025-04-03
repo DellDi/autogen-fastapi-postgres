@@ -6,15 +6,54 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import sys
+from pathlib import Path
 
-from api.routes import router as api_router
-from api.legacy_routes import router as legacy_router
+# 添加项目根目录到Python路径
+current_dir = Path(__file__).parent
+project_root = current_dir.parent
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
+
+# 确保安装了greenlet
+try:
+    import greenlet
+except ImportError:
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "greenlet"])
+    import greenlet
+
+# 导入SQLAlchemy相关配置
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine
+from contextlib import asynccontextmanager
+
+# 导入路由
+from agentchat_fastapi.api.routes import router as api_router
+from agentchat_fastapi.api.legacy_routes import router as legacy_router
+
+# 配置SQLAlchemy异步引擎
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/autogen_db")
+engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+
+# 创建应用启动和关闭的上下文管理器
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 应用启动时执行
+    print("应用启动，初始化数据库连接...")
+    # 应用运行中...
+    yield
+    # 应用关闭时执行
+    print("应用关闭，清理资源...")
+    await engine.dispose()
 
 # 创建FastAPI应用
 app = FastAPI(
     title="智能体聊天API",
     description="基于FastAPI的智能体聊天应用，支持会话管理和消息处理",
-    version="0.2.1"
+    version="0.2.5",
+    lifespan=lifespan
 )
 
 # 添加CORS中间件
