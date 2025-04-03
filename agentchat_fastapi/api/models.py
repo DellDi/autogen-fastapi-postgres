@@ -18,16 +18,39 @@ class Base(DeclarativeBase):
 class ChatSession(Base):
     """聊天会话模型"""
     __tablename__ = "chat_sessions"
+    __table_args__ = {"comment": "聊天会话表"}
     
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name: Mapped[str] = mapped_column(String(100), nullable=False, default="新会话")
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), 
+        primary_key=True, 
+        default=uuid.uuid4,
+        comment="会话ID"
+    )
+    name: Mapped[str] = mapped_column(
+        String(100), 
+        nullable=False, 
+        default="新会话",
+        comment="会话名称"
+    )
     created_at: Mapped[datetime] = mapped_column(
-        default=func.now(), server_default=text("now()"), nullable=False
+        default=func.now(), 
+        server_default=text("now()"), 
+        nullable=False,
+        comment="创建时间"
     )
     updated_at: Mapped[datetime] = mapped_column(
-        default=func.now(), server_default=text("now()"), onupdate=func.now(), nullable=False
+        default=func.now(), 
+        server_default=text("now()"), 
+        onupdate=func.now(), 
+        nullable=False,
+        comment="更新时间"
     )
-    agent_state: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True, default=dict)
+    agent_state: Mapped[Dict[str, Any]] = mapped_column(
+        JSON, 
+        nullable=True, 
+        default=dict,
+        comment="智能体状态，存储为JSON"
+    )
     
     # 关系
     messages: Mapped[List["ChatMessage"]] = relationship(
@@ -66,20 +89,56 @@ class ChatSession(Base):
 class ChatMessage(Base):
     """聊天消息模型"""
     __tablename__ = "chat_messages"
+    __table_args__ = {"comment": "聊天消息表"}
     
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), 
+        primary_key=True, 
+        default=uuid.uuid4,
+        comment="消息ID"
+    )
     session_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="CASCADE")
+        UUID(as_uuid=True), 
+        ForeignKey("chat_sessions.id", ondelete="CASCADE"),
+        comment="关联的会话ID"
     )
-    source: Mapped[str] = mapped_column(String(50), nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    type: Mapped[str] = mapped_column(String(50), nullable=False)
-    thought: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source: Mapped[str] = mapped_column(
+        String(50), 
+        nullable=False,
+        comment="消息来源，如user或agent"
+    )
+    content: Mapped[str] = mapped_column(
+        Text, 
+        nullable=False,
+        comment="消息内容"
+    )
+    type: Mapped[str] = mapped_column(
+        String(50), 
+        nullable=False,
+        comment="消息类型，如TextMessage、ImageMessage等"
+    )
+    thought: Mapped[Optional[str]] = mapped_column(
+        Text, 
+        nullable=True,
+        comment="思考过程，仅适用于智能体消息"
+    )
     created_at: Mapped[datetime] = mapped_column(
-        default=func.now(), server_default=text("now()"), nullable=False
+        default=func.now(), 
+        server_default=text("now()"), 
+        nullable=False,
+        comment="创建时间"
     )
-    models_usage: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
-    metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    models_usage: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON, 
+        nullable=True,
+        comment="模型使用情况，如tokens、费用等"
+    )
+    meta_data: Mapped[Dict[str, Any]] = mapped_column(
+        JSON, 
+        nullable=False, 
+        default=dict,
+        comment="附加元数据，存储为JSON"
+    )
     
     # 关系
     session: Mapped["ChatSession"] = relationship("ChatSession", back_populates="messages")
@@ -94,7 +153,7 @@ class ChatMessage(Base):
             "type": self.type,
             "created_at": self.created_at.isoformat(),
             "models_usage": self.models_usage,
-            "metadata": self.metadata
+            "meta_data": self.meta_data
         }
         
         # 只有当thought存在时才添加到结果中

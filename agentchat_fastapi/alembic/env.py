@@ -3,6 +3,7 @@ Alembic 环境配置
 """
 import asyncio
 import os
+import sys
 from logging.config import fileConfig
 
 from alembic import context
@@ -11,8 +12,11 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+# 添加项目根目录到 Python 路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # 加载模型，确保它们被导入到 Base.metadata 中
-from models import Base
+from api.models import Base
 
 # 加载环境变量
 load_dotenv()

@@ -1,4 +1,4 @@
-# 基于FastAPI的智能体聊天应用
+# FastAPI智能体聊天应用
 
 基于FastAPI和PostgreSQL的智能体聊天应用，支持会话管理和消息处理。
 
@@ -31,6 +31,7 @@ agentchat_fastapi/
 ├── .env                    # 环境变量配置
 ├── alembic.ini             # Alembic配置
 ├── CHANGELOG.md            # 更新日志
+├── init_db.py              # 数据库初始化脚本
 ├── main.py                 # 应用主入口
 ├── model_config_template.yaml  # 模型配置模板
 └── README.md               # 项目说明
@@ -46,6 +47,7 @@ agentchat_fastapi/
 - 自动生成会话名称
 - 支持思考过程（thought）记录
 - 提供示例聊天界面
+- 自动数据库初始化脚本
 
 ## 快速开始
 
@@ -72,13 +74,7 @@ pip install -e .
 
 ### 配置数据库
 
-1. 创建 PostgreSQL 数据库：
-
-```bash
-createdb autogen_db
-```
-
-2. 在项目根目录下创建 `.env` 文件，配置数据库连接：
+1. 在项目根目录下创建 `.env` 文件，配置数据库连接：
 
 ```
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/autogen_db
@@ -97,27 +93,35 @@ config:
   api_key: your_openai_api_key
 ```
 
-### 运行数据库迁移
+### 初始化数据库
+
+使用初始化脚本自动创建数据库和执行迁移：
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
-alembic upgrade head
+cd /Users/delldi/work-code/aigc-step/autogen-example
+uv run -m agentchat_fastapi.init_db
 ```
+
+初始化脚本会自动执行以下操作：
+1. 检查数据库是否存在，不存在则创建
+2. 创建和修复迁移目录结构（如果需要）
+3. 初始化迁移（如果没有现有迁移）
+4. 执行数据库迁移
 
 ### 启动应用
 
 启动API服务：
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
-python main.py
+cd /Users/delldi/work-code/aigc-step/autogen-example
+uv run -m agentchat_fastapi.main
 ```
 
 或者启动示例应用：
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
-python example/app.py
+cd /Users/delldi/work-code/aigc-step/autogen-example
+uv run -m agentchat_fastapi.example.app
 ```
 
 应用将在 http://localhost:8001 上运行。
@@ -163,6 +167,35 @@ curl http://localhost:8001/api/sessions/{session_id}/history
 /
 /chat
 /history
+```
+
+## 服务器部署
+
+### 自动初始化
+
+在服务器上部署时，可以使用 `init_db.py` 脚本自动初始化数据库：
+
+```bash
+# 使用默认 .env 文件
+uv run -m agentchat_fastapi.init_db
+
+# 指定环境变量文件
+uv run -m agentchat_fastapi.init_db --env /path/to/.env
+
+# 禁用自动修复功能
+uv run -m agentchat_fastapi.init_db --no-fix
+```
+
+### 生产环境启动
+
+在生产环境中，建议使用 Gunicorn 或 Uvicorn 启动应用：
+
+```bash
+# 使用 Uvicorn
+uvicorn agentchat_fastapi.main:app --host 0.0.0.0 --port 8001
+
+# 使用 Gunicorn（多工作进程）
+gunicorn agentchat_fastapi.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8001
 ```
 
 ## 文档
@@ -228,6 +261,95 @@ sequenceDiagram
     MessageService->>Database: 保存消息
     FastAPI-->>User: 返回智能体回复
 ```
+
+## 数据库迁移
+
+应用使用 Alembic 管理数据库迁移。以下是常用的迁移操作流程：
+
+### 1. 创建新的迁移版本
+
+当模型发生变化时，可以自动生成迁移脚本：
+
+```bash
+# 进入项目目录
+cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
+
+# 自动生成迁移脚本，--autogenerate 会检测模型变更
+alembic revision --autogenerate -m "迁移说明，例如：添加新字段"
+```
+
+这将在 `alembic/versions` 目录下生成一个新的迁移脚本。
+
+### 2. 检查生成的迁移脚本
+
+生成的迁移脚本位于 `alembic/versions` 目录，命名格式为 `{revision_id}_{message}.py`。
+**请务必检查生成的脚本**，特别是以下几个方面：
+
+- 表和字段的创建/修改/删除是否符合预期
+- 索引的创建/删除是否合理
+- 数据类型转换是否正确
+- 是否需要添加数据迁移逻辑
+
+### 3. 应用迁移
+
+检查无误后，执行以下命令应用迁移：
+
+```bash
+# 升级到最新版本
+alembic upgrade head
+
+# 或者升级到特定版本
+alembic upgrade {revision_id}
+```
+
+### 4. 回滚迁移
+
+如果需要回滚迁移，可以使用：
+
+```bash
+# 回滚到上一个版本
+alembic downgrade -1
+
+# 回滚到特定版本
+alembic downgrade {revision_id}
+
+# 回滚到最初版本
+alembic downgrade base
+```
+
+### 5. 查看迁移历史和当前版本
+
+```bash
+# 查看所有迁移历史
+alembic history
+
+# 查看当前数据库版本
+alembic current
+```
+
+### 6. 给表和字段添加中文注释
+
+在数据库中添加中文注释可以提高可读性和可维护性。在 SQLAlchemy 模型中添加注释的方式：
+
+1. 表级别注释：
+```python
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+    __table_args__ = {"comment": "聊天会话表"}
+    # ...
+```
+
+2. 字段级别注释：
+```python
+name: Mapped[str] = mapped_column(
+    String(100), 
+    nullable=False, 
+    default="新会话",
+    comment="会话名称"  # 添加中文注释
+)
+```
+
+添加注释后，需要创建和应用新的迁移脚本，才能将注释更新到数据库中。
 
 ## 更新日志
 
