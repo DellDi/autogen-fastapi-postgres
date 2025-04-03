@@ -3,11 +3,11 @@
 """
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Any, Optional
 
-from sqlalchemy import ForeignKey, String, Text, func, text
-from sqlalchemy.dialects.postgresql import JSON, UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, ForeignKey, JSON, func, text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import mapped_column, relationship, Mapped
 
 from agentchat_fastapi.api.database import Base
 
@@ -105,7 +105,7 @@ class ChatMessage(Base):
         comment="消息来源，如user或agent"
     )
     content: Mapped[str] = mapped_column(
-        Text, 
+        String, 
         nullable=False,
         comment="消息内容"
     )
@@ -115,7 +115,7 @@ class ChatMessage(Base):
         comment="消息类型，如TextMessage、ImageMessage等"
     )
     thought: Mapped[Optional[str]] = mapped_column(
-        Text, 
+        String, 
         nullable=True,
         comment="思考过程，仅适用于智能体消息"
     )

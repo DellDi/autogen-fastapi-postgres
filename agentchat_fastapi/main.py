@@ -1,13 +1,15 @@
 """
 FastAPI智能体聊天应用 - 主入口文件
 """
-import uvicorn
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 import os
 import sys
 from pathlib import Path
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import uvicorn
 
 # 添加项目根目录到Python路径
 current_dir = Path(__file__).parent
@@ -20,22 +22,12 @@ try:
     import greenlet
 except ImportError:
     import subprocess
+    print("安装greenlet依赖...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "greenlet"])
     import greenlet
 
-# 导入SQLAlchemy相关配置
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine
-from contextlib import asynccontextmanager
-
-# 导入路由
-from agentchat_fastapi.api.routes import router as api_router
-from agentchat_fastapi.api.legacy_routes import router as legacy_router
-
-# 配置SQLAlchemy异步引擎
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/autogen_db")
-engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+# 导入数据库引擎和相关组件
+from agentchat_fastapi.api.database import engine, get_db
 
 # 创建应用启动和关闭的上下文管理器
 @asynccontextmanager
@@ -68,11 +60,11 @@ app.add_middleware(
 # 挂载静态文件
 app.mount("/static", StaticFiles(directory=os.path.dirname(__file__)), name="static")
 
+# 导入路由
+from agentchat_fastapi.api.routes import router as api_router
+
 # 包含API路由
 app.include_router(api_router, prefix="/api")
-
-# 包含旧版API路由（为了兼容性）
-app.include_router(legacy_router)
 
 # 示例用法
 if __name__ == "__main__":

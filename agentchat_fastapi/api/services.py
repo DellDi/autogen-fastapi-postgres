@@ -3,18 +3,18 @@
 """
 import os
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import aiofiles
 import yaml
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import TextMessage
 from autogen_core.models import ChatCompletionClient
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agentchat_fastapi.api.models import ChatMessage, ChatSession
-from agentchat_fastapi.api.database import get_db
+
 
 # 模型配置路径
 model_config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "model_config.yaml")
@@ -133,11 +133,28 @@ class ChatSessionService:
     @staticmethod
     async def delete_session(db: AsyncSession, session_id: uuid.UUID) -> bool:
         """删除会话"""
-        session = await ChatSessionService.get_session(db, session_id)
-        if session:
-            await db.delete(session)
+        try:
+            # 先查询会话是否存在
+            session = await ChatSessionService.get_session(db, session_id)
+            if not session:
+                return False
+                
+            # 先删除关联的消息（显式删除以确保级联删除正常工作）
+            await db.execute(
+                delete(ChatMessage).where(ChatMessage.session_id == session_id)
+            )
+            
+            # 再删除会话
+            await db.execute(
+                delete(ChatSession).where(ChatSession.id == session_id)
+            )
+            
+            # 刷新但不提交（提交由路由层处理）
+            await db.flush()
             return True
-        return False
+        except Exception as e:
+            print(f"删除会话服务错误: {e}")
+            return False
     
     @staticmethod
     async def update_session_name_from_messages(db: AsyncSession, session_id: uuid.UUID) -> Optional[ChatSession]:

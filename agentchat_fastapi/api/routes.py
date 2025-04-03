@@ -6,13 +6,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken
 
-from agentchat_fastapi.api.services import get_agent
+from agentchat_fastapi.api.services import get_agent, ChatMessageService, ChatSessionService
 from agentchat_fastapi.api.models import ChatSession
-from agentchat_fastapi.api.services import ChatMessageService, ChatSessionService
 from agentchat_fastapi.api.database import get_db
 
 router = APIRouter(tags=["会话管理"])
@@ -85,13 +85,24 @@ async def delete_session(
 ) -> Dict[str, Any]:
     """删除会话"""
     try:
-        success = await ChatSessionService.delete_session(db, session_id)
-        if not success:
+        # 先查询会话是否存在
+        session = await ChatSessionService.get_session(db, session_id)
+        if not session:
             raise HTTPException(status_code=404, detail="会话不存在")
+            
+        # 使用ORM方式删除会话（级联删除会自动处理关联的消息）
+        await db.delete(session)
+        
+        # 提交事务
+        await db.commit()
+        
         return {"success": True, "message": "会话已删除"}
     except HTTPException:
         raise
     except Exception as e:
+        # 记录详细错误信息以便调试
+        print(f"删除会话错误: {str(e)}")
+        await db.rollback()
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 

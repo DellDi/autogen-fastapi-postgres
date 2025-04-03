@@ -45,5 +45,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     session = async_session_factory()
     try:
         yield session
+        # 添加自动提交逻辑
+        await session.commit()
+    except Exception as e:
+        # 发生异常时回滚
+        await session.rollback()
+        raise
     finally:
         await session.close()
+
+# 导出这些组件，以便其他模块可以从这里导入
+__all__ = ['Base', 'engine', 'get_db', 'async_session_factory', 'AsyncSession']
