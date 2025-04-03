@@ -11,5 +11,14 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "PyYAML",
-    "streamlit"
+    "streamlit",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary",
+    "alembic",
+    "asyncpg",
+    "greenlet",
+    "python-dotenv"
 ]
+
+[tool.alembic]
+script_location = "alembic"
