@@ -1,80 +1,66 @@
-# Building a Multi-Agent Application with AutoGen and Chainlit
+# 基于 AutoGen 与 Chainlit 的多智能体聊天应用
 
-In this sample, we will demonstrate how to build simple chat interface that
-interacts with an [AgentChat](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/index.html)
-agent or a team, using [Chainlit](https://github.com/Chainlit/chainlit),
-and support streaming messages.
+本示例演示如何使用 [AutoGen AgentChat](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/index.html) 与 [Chainlit](https://github.com/Chainlit/chainlit) 快速搭建支持消息流式传输的多智能体聊天界面。
 
-## Installation
+---
 
-To run this sample, you will need to install the following packages:
+## 📦 安装依赖
+
+推荐使用 `pip` 安装所需依赖：
 
 ```shell
 pip install -U chainlit autogen-agentchat autogen-ext[openai] pyyaml
 ```
 
-To use other model providers, you will need to install a different extra
-for the `autogen-ext` package.
-See the [Models documentation](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/models.html) for more information.
+如需使用其他模型服务商，请参考 [模型文档](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/models.html) 并为 `autogen-ext` 安装对应扩展。
 
+---
 
-## Model Configuration
+## ⚙️ 模型配置
 
-Create a configuration file named `model_config.yaml` to configure the model
-you want to use. Use `model_config_template.yaml` as a template.
+请新建 `model_config.yaml` 文件用于自定义模型参数，可参考 `model_config_template.yaml` 模板进行修改。
 
-## Running the Agent Sample
+---
 
-The first sample demonstrate how to interact with a single AssistantAgent
-from the chat interface.
+## 🚀 示例运行
 
+### 1. 单智能体对话
+
+与单个 AssistantAgent 聊天：
 ```shell
 chainlit run app_agent.py -h
 ```
+示例提问：`西雅图天气怎么样？`
 
-You can use one of the starters. For example, ask "What the weather in Seattle?".
+### 2. 多智能体团队对话
 
-The agent will respond by first using the tools provided and then reflecting
-on the result of the tool execution.
-
-## Running the Team Sample
-
-The second sample demonstrate how to interact with a team of agents from the
-chat interface.
-
+与智能体团队（轮流回复）互动：
 ```shell
 chainlit run app_team.py -h
 ```
-You can use one of the starters. For example, ask "Write a poem about winter.".
+示例提问：`写一首关于冬天的诗。`
 
-The team is a RoundRobinGroupChat, so each agent will respond in turn.
-There are two agents in the team: one is instructed to be generally helpful
-and the other one is instructed to be a critic and provide feedback. 
-The two agents will respond in round-robin fashion until
-the 'APPROVE' is mentioned by the critic agent.
+团队采用 RoundRobinGroupChat 机制，两位智能体分别负责通用回复与批判反馈，直到“APPROVE”被批判型智能体提及为止。
 
-## Running the Team Sample with UserProxyAgent
+### 3. 用户代理智能体（UserProxyAgent）
 
-The third sample demonstrate how to interact with a team of agents including
-a [UserProxyAgent](https://microsoft.github.io/autogen/stable/reference/python/autogen_agentchat.agents.html#autogen_agentchat.agents.UserProxyAgent)
-for approval or rejection.
-
+团队中加入用户代理，支持人工审批：
 ```shell
 chainlit run app_team_user_proxy.py -h
 ```
+示例提问：`写一段反转字符串的代码。`
 
-You can use one of the starters. For example, ask "Write code to reverse a string.".
+默认情况下，`UserProxyAgent` 会请求用户输入“批准”或“拒绝”，批准后团队停止响应。
 
-By default, the `UserProxyAgent` will request an input action from the user
-to approve or reject the response from the team.
-When the user approves the response, the `UserProxyAgent` will send a message
-to the team containing the text "APPROVE", and the team will stop responding.
+---
 
+## 🛠️ 扩展建议
 
-## Next Steps
+- 尝试更多 [智能体类型](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/agents.html)
+- 体验不同 [团队结构](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/teams.html)
+- 探索自定义多模态消息的智能体
 
-There are a few ways you can extend this example:
+---
 
-- Try other [agents](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/agents.html).
-- Try other [team](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/teams.html) types beyond the `RoundRobinGroupChat`.
-- Explore custom agents that sent multimodal messages.
+> 如需详细原理与高级用法，请参考：[AutoGen 官方文档](https://microsoft.github.io/autogen/)
+

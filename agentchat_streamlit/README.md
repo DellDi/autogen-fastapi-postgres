@@ -1,45 +1,49 @@
-# Streamlit AgentChat Sample Application
+# 基于 Streamlit 的智能体聊天助手
 
-This is a sample AI chat assistant built with [Streamlit](https://streamlit.io/)
+本项目是一个使用 [Streamlit](https://streamlit.io/) 快速搭建的 AI 聊天助手示例，支持多种主流大模型后端，易于扩展和二次开发。
 
-## Setup
+---
 
-Install the `streamlit` package with the following command:
+## 📦 安装依赖
 
-```bash
-pip install streamlit
-```
+1. 安装基础依赖：
+   ```bash
+   pip install streamlit
+   ```
+2. 如需接入 Azure OpenAI 或其它 OpenAI 兼容模型，安装扩展包：
+   ```bash
+   pip install "autogen-ext[openai,azure]"
+   # 仅用 OpenAI 官方模型可用
+   # pip install "autogen-ext[openai]"
+   ```
 
-To use Azure OpenAI models or models hosted on OpenAI-compatible API endpoints,
-you need to install the `autogen-ext[openai,azure]` package. You can install it with the following command:
+---
 
-```bash
-pip install "autogen-ext[openai,azure]"
-# pip install "autogen-ext[openai]" for OpenAI models
-```
+## ⚙️ 模型配置
 
-Create a new file named `model_config.yml` in the the same directory as the script
-to configure the model you want to use.
-
-For example, to use `gpt-4o-mini` model from Azure OpenAI, you can use the following configuration:
+在脚本同级目录下新建 `model_config.yml` 文件，配置你想要使用的大模型。例如，接入 Azure OpenAI 的 `gpt-4o-mini` 可参考：
 
 ```yml
 provider: autogen_ext.models.openai.AzureOpenAIChatCompletionClient
 config:
   azure_deployment: "gpt-4o-mini"
   model: gpt-4o-mini
-  api_version: REPLACE_WITH_MODEL_API_VERSION
-  azure_endpoint: REPLACE_WITH_MODEL_ENDPOINT
-  api_key: REPLACE_WITH_MODEL_API_KEY
+  api_version: 请填写API版本
+  azure_endpoint: 请填写Azure端点
+  api_key: 请填写API密钥
 ```
 
-For more information on how to configure the model and use other providers,
-please refer to the [Models documentation](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/models.html).
+更多模型配置与接入方法详见 [官方文档](https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/tutorial/models.html)。
 
-## Run
+---
 
-Run the following command to start the web application:
+## 🚀 启动应用
 
+运行如下命令启动 Streamlit 网页应用：
 ```bash
 streamlit run main.py
 ```
+
+---
+
+> 本项目适合快速体验与定制基于大模型的智能体聊天界面，欢迎根据需求扩展功能！

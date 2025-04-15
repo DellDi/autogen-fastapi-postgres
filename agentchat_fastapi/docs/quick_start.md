@@ -72,7 +72,7 @@ INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, 添加thought字�
 
 ```bash
 cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
-python main.py
+uv run -m main
 ```
 
 API服务将在 http://localhost:8001 上运行，提供完整的API功能。
@@ -81,7 +81,7 @@ API服务将在 http://localhost:8001 上运行，提供完整的API功能。
 
 ```bash
 cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
-python example/app.py
+uv run -m example/app
 ```
 
 示例应用将在 http://localhost:8001 上运行，提供聊天界面和基本API功能。

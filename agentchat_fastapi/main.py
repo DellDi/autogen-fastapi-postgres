@@ -1,6 +1,7 @@
 """
 FastAPI智能体聊天应用 - 主入口文件
 """
+
 import os
 import sys
 from pathlib import Path
@@ -17,17 +18,9 @@ project_root = current_dir.parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-# 确保安装了greenlet
-try:
-    import greenlet
-except ImportError:
-    import subprocess
-    print("安装greenlet依赖...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "greenlet"])
-    import greenlet
-
 # 导入数据库引擎和相关组件
-from agentchat_fastapi.api.database import engine, get_db
+from agentchat_fastapi.api.database import engine
+
 
 # 创建应用启动和关闭的上下文管理器
 @asynccontextmanager
@@ -40,12 +33,13 @@ async def lifespan(app: FastAPI):
     print("应用关闭，清理资源...")
     await engine.dispose()
 
+
 # 创建FastAPI应用
 app = FastAPI(
     title="智能体聊天API",
     description="基于FastAPI的智能体聊天应用，支持会话管理和消息处理",
     version="0.2.5",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # 添加CORS中间件

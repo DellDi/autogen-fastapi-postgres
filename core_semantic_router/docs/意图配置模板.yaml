@@ -1,0 +1,63 @@
+# 物业智能体意图配置模板（YAML示例）
+
+agents:
+  - name: GM
+    label: 总经理助手
+    code: 01
+    description: 你是物业公司老总/高管的助手，帮助查数据、行业分析、辅助决策
+    keywords: ["总经理", "GM", "决策", "数据分析"]
+    sub_intents: []
+  - name: AC
+    label: 精算助手
+    code: 02
+    description: 你是物业公司的精算助手，辅助预算编制、项目盈利测算
+    keywords: ["精算", "预算", "盈利", "AC"]
+    sub_intents: []
+  - name: CT
+    label: 合同助手
+    code: 03
+    description: 你是物业公司合同助手，合同起草、录入、风险识别、文本比对、法律信息
+    keywords: ["合同", "CT", "法律", "比对"]
+    sub_intents: []
+  - name: WO
+    label: 工单助手
+    code: WO
+    description: 你是物业公司工单助手，受理业主报事、报修、投诉、建议等工单
+    keywords: ["工单", "报修", "投诉", "WO"]
+    sub_intents:
+      - name: WO-01
+        label: 提报工单
+        description: 受理业主提交工单
+      - name: WO-02
+        label: 查询工单
+        description: 查询工单处理进度
+  - name: QC
+    label: 品检助手
+    code: 05
+    description: 品质巡检、抄表、读数识别、巡检优化
+    keywords: ["品检", "巡检", "抄表", "QC"]
+    sub_intents: []
+  - name: VS
+    label: 拜访助手
+    code: 06
+    description: 拜访计划、纪要生成
+    keywords: ["拜访", "VS", "纪要"]
+    sub_intents: []
+  - name: PP
+    label: 催缴助手
+    code: 07
+    description: 催缴策略、话术生成
+    keywords: ["催缴", "PP", "欠费"]
+    sub_intents: []
+  - name: EV
+    label: 活动助手
+    code: 08
+    description: 活动策划、海报宣传
+    keywords: ["活动", "EV", "宣传"]
+    sub_intents: []
+  - name: PR
+    label: 舆情助手
+    code: 09
+    description: 舆情监控、报告生成
+    keywords: ["舆情", "PR", "报告"]
+    sub_intents: []

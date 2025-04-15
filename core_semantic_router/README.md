@@ -1,82 +1,94 @@
-# Multi Agent Orchestration, Distributed Agent Runtime Example
+# 分布式多智能体编排与语义路由示例
 
-This repository is an example of how to run a distributed agent runtime. The system is composed of three main components:
+本仓库展示了如何搭建一个分布式智能体运行时系统，聚焦于多智能体的编排与高效语义路由。
 
-1. The agent host runtime, which is responsible for managing the eventing engine, and the pub/sub message system.
-2. The worker runtime, which is responsible for the lifecycle of the distributed agents, including the "semantic router".
-3. The user proxy, which is responsible for managing the user interface and the user interactions with the agents.
+---
 
+## 🏗️ 系统核心组成
 
-## Example Scenario
+1. **Agent Host Runtime（主控运行时）**  
+   负责事件引擎与消息发布/订阅系统的统一管理。
+2. **Worker Runtime（工作节点运行时）**  
+   管理分布式智能体的生命周期，实现“语义路由”能力。
+3. **User Proxy（用户代理）**  
+   管理用户界面及用户与智能体的交互。
 
-In this example, we have a simple scenario where we have a set of distributed agents (an "HR", and a "Finance" agent) which an enterprise may use to manage their HR and Finance operations. Each of these agents are independent, and can be running on different machines. While many multi-agent systems are built to have the agents collaborate to solve a difficult task - the goal of this example is to show how an enterprise may manage a large set of agents that are suited to individual tasks, and how to route a user to the most relevant agent for the task at hand.
+---
 
-The way this system is designed, when a user initiates a session, the semantic router agent will identify the intent of the user (currently using the overly simple method of string matching), identify the most relevant agent, and then route the user to that agent. The agent will then manage the conversation with the user, and the user will be able to interact with the agent in a conversational manner.
+## 📋 应用场景示例
 
-While the logic of the agents is simple in this example, the goal is to show how the distributed runtime capabilities of autogen supports this scenario independantly of the capabilities of the agents themselves.
+以企业 HR 和财务为例：
+- 系统中有多个分布式智能体（如“人力资源智能体”、“财务智能体”），每个智能体可独立运行在不同机器上。
+- 用户的请求将通过语义路由自动分发给最合适的智能体。
+- 本示例强调：企业可高效管理大量专注于不同任务的智能体，无需所有智能体协作解决单一难题，而是针对性地路由请求，实现规模化智能体管理。
 
-## Getting Started
+---
 
-1. Install `autogen-core` and its dependencies
+> 本项目适用于探索分布式智能体架构、企业级智能体调度与路由等场景，欢迎扩展和定制！
 
-## To run
+系统设计说明：当用户发起会话时，语义路由智能体会识别用户意图（目前采用简单的字符串匹配方式），自动选择最合适的智能体进行路由。之后由该智能体与用户进行持续对话，直到会话结束。
 
-Since this example is meant to demonstrate a distributed runtime, the components of this example are meant to run in different processes - i.e. different terminals.
+虽然本示例中的智能体逻辑较为简单，核心目的是展示 autogen 分布式运行时对大规模多智能体场景的支持能力。
 
-In 2 separate terminals, run:
+---
 
-```bash
-# Terminal 1, to run the Agent Host Runtime
-python run_host.py
-```
+## 🚦 快速上手指南
 
-```bash
-# Terminal 2, to run the Worker Runtime
-python run_semantic_router.py
-```
+1. 安装依赖
+   ```bash
+   pip install autogen-core
+   ```
 
-The first terminal should log a series of events where the vrious agents are registered
-against the runtime.
+2. 启动分布式运行时（需分别在两个终端运行）：
+   ```bash
+   # 终端1：主控运行时
+   python run_host.py
+   ```
+   ```bash
+   # 终端2：工作节点/语义路由
+   python run_semantic_router.py
+   ```
 
-In the second terminal, you may enter a request related to finance or hr scenarios.
-In our simple example here, this means using one of the following keywords in your request:
+3. 在第二个终端输入与“财务”或“人力资源”相关的请求，关键词示例：
+   - 财务智能体：`finance`、`money`、`budget`
+   - HR智能体：`hr`、`human resources`、`employee`
 
-- For the finance agent: "finance", "money", "budget"
-- For the hr agent: "hr", "human resources", "employee"   
+4. 你将看到主控与工作节点间的消息路由过程，最终由对应智能体返回结果。
 
-You will then see the host and worker runtimes send messages back and forth, routing to the correct
-agent, before the final response is printed.
+5. 会话期间，用户可持续与当前智能体互动，输入 `END` 即可断开会话，重新开始。
 
-The conversation can then continue with the selected agent until the user sends a message containing "END",at which point the agent will be disconnected from the user and a new conversation can start.
+---
 
-## Message Flow
+## 📨 消息流流程图
 
-Using the "Topic" feature of the agent host runtime, the message flow of the system is as follows:
+借助主控运行时的“Topic”机制，系统消息流如下所示：
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Closure_Agent
-    participant User_Proxy_Agent
-    participant Semantic_Router
-    participant Worker_Agent
+    participant 用户
+    participant 对外Closure代理
+    participant 用户代理
+    participant 语义路由
+    participant 工作智能体
 
-    User->>User_Proxy_Agent: Send initial message
-    Semantic_Router->>Worker_Agent: Route message to appropriate agent
-    Worker_Agent->>User_Proxy_Agent: Respond to user message
-    User_Proxy_Agent->>Closure_Agent: Forward message to externally facing Closure Agent
-    Closure_Agent->>User: Expose the response to the User
-    User->>Worker_Agent: Directly send follow up message
-    Worker_Agent->>User_Proxy_Agent: Respond to user message
-    User_Proxy_Agent->>Closure_Agent: Forward message to externally facing Closure Agent
-    Closure_Agent->>User: Return response
-    User->>Worker_Agent: Send "END" message
-    Worker_Agent->>User_Proxy_Agent: Confirm session end
-    User_Proxy_Agent->>Closure_Agent: Confirm session end
-    Closure_Agent->>User: Display session end message
+    用户->>用户代理: 发送初始消息
+    语义路由->>工作智能体: 路由到合适智能体
+    工作智能体->>用户代理: 响应用户消息
+    用户代理->>对外Closure代理: 转发消息
+    对外Closure代理->>用户: 返回响应
+    用户->>工作智能体: 直接发送后续消息
+    工作智能体->>用户代理: 响应消息
+    用户代理->>对外Closure代理: 转发消息
+    对外Closure代理->>用户: 返回响应
+    用户->>工作智能体: 发送"END"
+    工作智能体->>用户代理: 确认会话结束
+    用户代理->>对外Closure代理: 确认会话结束
+    对外Closure代理->>用户: 显示会话结束
 ```
-### Contributors
 
+---
+
+### 贡献者
 - Diana Iftimie (@diftimieMSFT)
 - Oscar Fimbres (@ofimbres)
 - Taylor Rockey (@tarockey)
