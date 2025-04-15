@@ -5,7 +5,6 @@ import os
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
-import aiofiles
 import yaml
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.messages import TextMessage
@@ -26,8 +25,8 @@ async def get_agent(
 ) -> AssistantAgent:
     """获取智能体，从数据库加载状态"""
     # 获取模型客户端配置
-    async with aiofiles.open(model_config_path, "r") as file:
-        model_config = yaml.safe_load(await file.read())
+    with open(model_config_path, "r") as file:
+        model_config = yaml.safe_load(file.read())
     model_client = ChatCompletionClient.load_component(model_config)
     
     # 创建智能体

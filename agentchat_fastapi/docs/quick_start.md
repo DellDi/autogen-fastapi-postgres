@@ -10,14 +10,14 @@
 使用 uv 安装依赖：
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example
+
 uv pip install -e .
 ```
 
 或者使用 pip 安装：
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example
+
 pip install -e .
 ```
 
@@ -51,7 +51,7 @@ config:
 ## 运行数据库迁移
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
+
 alembic upgrade head
 ```
 
@@ -71,7 +71,7 @@ INFO  [alembic.runtime.migration] Running upgrade 001 -> 002, 添加thought字�
 ### 1. 启动API服务
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
+
 uv run -m main
 ```
 
@@ -80,7 +80,7 @@ API服务将在 http://localhost:8001 上运行，提供完整的API功能。
 ### 2. 启动示例应用
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
+
 uv run -m example/app
 ```
 

@@ -61,17 +61,8 @@ agentchat_fastapi/
 使用 uv 安装依赖：
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example
 uv pip install -e .
 ```
-
-或者使用 pip 安装：
-
-```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example
-pip install -e .
-```
-
 ### 配置数据库
 
 1. 在项目根目录下创建 `.env` 文件，配置数据库连接：
@@ -98,7 +89,6 @@ config:
 使用初始化脚本自动创建数据库和执行迁移：
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example
 uv run -m agentchat_fastapi.init_db
 ```
 
@@ -113,14 +103,12 @@ uv run -m agentchat_fastapi.init_db
 启动API服务：
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example
 uv run -m agentchat_fastapi.main
 ```
 
 或者启动示例应用：
 
 ```bash
-cd /Users/delldi/work-code/aigc-step/autogen-example
 uv run -m agentchat_fastapi.example.app
 ```
 
@@ -272,11 +260,11 @@ sequenceDiagram
 
 ```bash
 # 进入项目目录
-cd /Users/delldi/work-code/aigc-step/autogen-example/agentchat_fastapi
+cd agentchat_fastapi
 
 # 自动生成迁移脚本，--autogenerate 会检测模型变更
 alembic revision --autogenerate -m "迁移说明，例如：添加新字段"
-```
+```2
 
 这将在 `alembic/versions` 目录下生成一个新的迁移脚本。
 

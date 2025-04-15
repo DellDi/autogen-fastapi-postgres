@@ -108,7 +108,19 @@ wheels = [
 ]
 
 [[package]]
-name = "autogen-example"
+name = "autogen-ext"
+version = "0.4.9.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "autogen-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7f/7a/f677c8bb3875fcc508fb7fb6900ac5bb4a3475d5c4a377eaab5634c1b31d/autogen_ext-0.4.9.3.tar.gz", hash = "sha256:c7bef82324ffb9e33b0f8c4cea783b24d1e48e7a9d852889ca5cc19e287500dc", size = 256181 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/4c/db18181dba60d38e5a31a6129d9d5702310e026d563d521d34c7baf9a881/autogen_ext-0.4.9.3-py3-none-any.whl", hash = "sha256:ac3780ec584be71eedd884483fc1a7db0f60318c369d05d7603bb7d27fe25883", size = 234499 },
+]
+
+[[package]]
+name = "autogen-fastapi-postgres"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
@@ -142,18 +154,6 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0.0" },
     { name = "streamlit" },
     { name = "uvicorn" },
-]
-
-[[package]]
-name = "autogen-ext"
-version = "0.4.9.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "autogen-core" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/7a/f677c8bb3875fcc508fb7fb6900ac5bb4a3475d5c4a377eaab5634c1b31d/autogen_ext-0.4.9.3.tar.gz", hash = "sha256:c7bef82324ffb9e33b0f8c4cea783b24d1e48e7a9d852889ca5cc19e287500dc", size = 256181 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/4c/db18181dba60d38e5a31a6129d9d5702310e026d563d521d34c7baf9a881/autogen_ext-0.4.9.3-py3-none-any.whl", hash = "sha256:ac3780ec584be71eedd884483fc1a7db0f60318c369d05d7603bb7d27fe25883", size = 234499 },
 ]
 
 [[package]]

@@ -22,3 +22,6 @@ dependencies = [
 
 [tool.alembic]
 script_location = "alembic"
+
+[tool.setuptools.packages.find]
+include = ["agentchat_fastapi*", "agentchat_chainlit*", "agentchat_streamlit*", "core_semantic_router*"]
