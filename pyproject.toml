@@ -7,7 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "autogen-core",
     "autogen_agentchat",
-    "autogen-ext",
+    "autogen-ext[openai]",
     "fastapi",
     "uvicorn",
     "PyYAML",
@@ -24,4 +24,4 @@ dependencies = [
 script_location = "alembic"
 
 [tool.setuptools.packages.find]
-include = ["agentchat_fastapi*", "agentchat_chainlit*", "agentchat_streamlit*", "core_semantic_router*"]
+include = ["agentchat_fastapi*", "agentchat_chainlit*", "agentchat_streamlit*", "core_semantic_router*", "autogenchat_bi*"]
