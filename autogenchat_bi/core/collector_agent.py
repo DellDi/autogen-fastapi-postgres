@@ -2,13 +2,19 @@
 信息收集智能体模块
 """
 
-import autogen
 from typing import Dict, Any, List
+from autogen_agentchat.agents import AssistantAgent
+from autogen_ext.models.openai import OpenAIChatCompletionClient
 
-class CollectorAgent(autogen.AssistantAgent):
+
+class CollectorAgent(AssistantAgent):
     """信息收集智能体"""
-    def __init__(self, name: str, system_message: str, llm_config: Dict[str, Any]):
-        super().__init__(name=name, system_message=system_message, llm_config=llm_config)
+
+    def __init__(self, name: str, system_message: str, model_client: Any):
+        super().__init__(
+            name=name, system_message=system_message, model_client=model_client
+        )
+
 
 DEFAULT_COLLECTOR_SYSTEM_MESSAGE = """你是一个专业的信息收集智能体，负责收集 BI 查询所需的完整信息。
 
@@ -20,10 +26,20 @@ DEFAULT_COLLECTOR_SYSTEM_MESSAGE = """你是一个专业的信息收集智能体
 你的提问应该简洁明了，一次只询问一个缺失信息。
 """
 
+
 def create_collector_agent(llm_config: Dict[str, Any]) -> CollectorAgent:
     """创建信息收集智能体实例"""
+    # 创建模型客户端
+    model_client = OpenAIChatCompletionClient(
+        model=llm_config.get("model", "gpt-4o"),
+        api_key=llm_config.get("api_key"),
+        base_url=llm_config.get("base_url"),
+        temperature=llm_config.get("temperature", 0.0),
+        model_info=llm_config.get("model_info"),
+    )
+
     return CollectorAgent(
-        name="信息收集智能体",
+        name="collector_agent",
         system_message=DEFAULT_COLLECTOR_SYSTEM_MESSAGE,
-        llm_config=llm_config,
+        model_client=model_client,
     )

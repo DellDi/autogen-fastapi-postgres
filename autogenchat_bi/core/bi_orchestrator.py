@@ -5,14 +5,15 @@ BI 智能体模块
 
 import json
 import uuid
+import asyncio
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from ..utils.date_parser import DateParser
-from .intent_agent import create_intent_agent
-from .collector_agent import create_collector_agent
+from autogenchat_bi.utils.date_parser import DateParser
+from autogenchat_bi.core.intent_agent import create_intent_agent
+from autogenchat_bi.core.collector_agent import create_collector_agent
 
-# 导入 AutoGen 组件
-import autogen
+# 导入最新版 AutoGen 组件
+from autogen_agentchat.agents import UserProxyAgent
 
 
 class BIAgent:
@@ -39,6 +40,7 @@ class BIAgent:
 
         # 初始化项目名称提取器
         from autogenchat_bi.utils.project_extractor import ProjectExtractor
+
         self.project_extractor = ProjectExtractor(llm_config=model_config)
 
         # 初始化智能体
@@ -53,15 +55,13 @@ class BIAgent:
         self.collector_agent = create_collector_agent(self.model_config)
 
         # 用户代理
-        self.user_proxy = autogen.UserProxyAgent(
-            name="用户",
-            human_input_mode="NEVER",
-            max_consecutive_auto_reply=10,
-            code_execution_config=False,
+        self.user_proxy = UserProxyAgent(
+            name="user",
+            description="用户",
         )
 
-    def process_query(self, query_text: str) -> Dict[str, Any]:
-        """处理用户查询
+    async def process_query_async(self, query_text: str) -> Dict[str, Any]:
+        """异步处理用户查询
 
         Args:
             query_text: 用户查询文本
@@ -86,10 +86,10 @@ class BIAgent:
         }
 
         # 1. 意图识别
-        intent_result = self._analyze_intent(query_text, context)
+        intent_result = await self._analyze_intent_async(query_text, context)
 
         # 2. 项目名称提取（无论意图如何，都尝试提取项目名称）
-        projects = self.project_extractor.extract_projects(query_text)
+        projects = await self.project_extractor.extract_projects_async(query_text)
         if projects:
             intent_result["projects"] = projects
 
@@ -112,7 +112,7 @@ class BIAgent:
         # 2. 信息收集
         if not intent_result.get("complete", False):
             # 如果信息不完整，收集缺失信息
-            collector_result = self._collect_info(
+            collector_result = await self._collect_info_async(
                 query_text,
                 intent_result.get("missing_info", []),
                 {
@@ -168,10 +168,22 @@ class BIAgent:
             "extracted_params": extracted_params,
         }
 
-    def _analyze_intent(
+    def process_query(self, query_text: str) -> Dict[str, Any]:
+        """同步处理用户查询（兼容旧版接口）
+
+        Args:
+            query_text: 用户查询文本
+
+        Returns:
+            处理结果
+        """
+        # 使用事件循环运行异步方法
+        return asyncio.run(self.process_query_async(query_text))
+
+    async def _analyze_intent_async(
         self, query_text: str, context: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """分析用户查询意图
+        """异步分析用户查询意图
 
         Args:
             query_text: 用户查询文本
@@ -187,44 +199,62 @@ class BIAgent:
 
             上下文：{json.dumps(context, ensure_ascii=False)}
 
-            请判断这是否是一个 BI 查询，并提取关键信息。
+            请判断这是否是一个指标数据查询，如果是，请提取关键信息。
             """
 
-        # 调用意图识别智能体
-        response = self.intent_agent.generate_reply(
-            messages=[{"role": "user", "content": prompt}]
-        )
-
+        # 异步调用意图识别智能体
+        result = await self.intent_agent.run(task=prompt)
+        # 从 TaskResult 对象中获取最后一次响应内容
+        response = result.messages[-1].content
         # 解析响应
         try:
             # 尝试从响应中提取 JSON
             import re
 
-            json_match = re.search(r"```json\n(.*?)\n```", response, re.DOTALL)
+            # 使用正则表达式提取 JSON 字符串
+            json_match = re.search(r"```json\s*(.+?)\s*```", response, re.DOTALL)
             if json_match:
                 json_str = json_match.group(1)
-                result = json.loads(json_str)
+                intent_result = json.loads(json_str)
             else:
-                # 尝试直接解析整个响应
-                result = json.loads(response)
+                # 如果没有找到 JSON 格式，尝试直接解析整个响应
+                intent_result = json.loads(response)
 
-            return result
+            # 处理日期信息
+            if "current_date" in intent_result and intent_result["current_date"]:
+                # 使用日期解析器解析日期字符串
+                parsed_date = await self.date_parser.parse_date_async(
+                    intent_result["current_date"]
+                )
+                intent_result["current_date"] = parsed_date
 
-        except (json.JSONDecodeError, AttributeError):
+            return intent_result
+        except Exception as e:
             # 如果解析失败，返回默认结果
             return {
-                "intent": "bi_query",
+                "intent": "other",
                 "complete": False,
-                "missing_info": ["项目", "时间", "指标"],
-                "precinctName": None,
-                "current_date": None,
-                "targetName": "",
+                "missing_info": ["precinctName", "current_date", "targetName"],
             }
 
-    def _collect_info(
+    def _analyze_intent(
+        self, query_text: str, context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """同步分析用户查询意图（兼容旧版接口）
+
+        Args:
+            query_text: 用户查询文本
+            context: 上下文信息
+
+        Returns:
+            意图分析结果
+        """
+        return asyncio.run(self._analyze_intent_async(query_text, context))
+
+    async def _collect_info_async(
         self, query_text: str, missing_info: List[str], collected_info: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """收集缺失信息
+        """异步收集缺失的信息
 
         Args:
             query_text: 用户查询文本
@@ -237,23 +267,41 @@ class BIAgent:
         # 构建提示词
         prompt = f"""用户查询：{query_text}
 
-            缺失信息：{', '.join(missing_info)}
+        缺失的信息：{', '.join(missing_info)}
 
-            已收集的信息：{json.dumps(collected_info, ensure_ascii=False)}
+        已收集的信息：{json.dumps(collected_info, ensure_ascii=False)}
 
-            请生成一个简洁明了的问题，向用户收集缺失信息。一次只询问一个信息。
-            """
+        请帮助收集缺失的信息，并生成合适的提问。
+        """
 
-        # 调用信息收集智能体
-        response = self.collector_agent.generate_reply(
-            messages=[{"role": "user", "content": prompt}]
-        )
+        # 异步调用信息收集智能体
+        result = await self.collector_agent.run(task=prompt)
+
+        # 从 TaskResult 对象中获取最后一次响应内容
+        response = result.messages[-1].content
 
         return {
             "response": response,
             "missing_info": missing_info,
             "collected_info": collected_info,
         }
+
+    def _collect_info(
+        self, query_text: str, missing_info: List[str], collected_info: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """同步收集缺失的信息（兼容旧版接口）
+
+        Args:
+            query_text: 用户查询文本
+            missing_info: 缺失的信息列表
+            collected_info: 已收集的信息
+
+        Returns:
+            收集结果
+        """
+        return asyncio.run(
+            self._collect_info_async(query_text, missing_info, collected_info)
+        )
 
     def update_conversation_history(self, role: str, content: str):
         """更新对话历史

@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 
 
-from ..core.bi_orchestrator import BIAgent
+from autogenchat_bi.core.bi_orchestrator import BIAgent
 
 # 加载环境变量
 load_dotenv()

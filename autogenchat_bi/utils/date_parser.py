@@ -1,11 +1,16 @@
-"""
-日期解析工具模块
+"""日期解析工具模块
 提供高级日期字符串解析功能，支持相对时间表达
 """
 
 from typing import Dict, List, Any, Optional
+import asyncio
 from datetime import datetime
 import json
+
+# 导入最新版 AutoGen 组件
+from autogen_agentchat.agents import AssistantAgent
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+
 
 class DateParser:
     """日期解析器"""
@@ -14,16 +19,23 @@ class DateParser:
         """初始化日期解析器
 
         Args:
-            llm_config: 语言模型配置
+            llm_config: 语言模型配置，包含模型名称、API密钥等
         """
+        # 保存原始配置
         self.llm_config = llm_config
 
-        # 导入 AutoGen 组件
-        import autogen
+        # 创建模型客户端
+        model_client = OpenAIChatCompletionClient(
+            model=llm_config.get("model", "gpt-4o"),
+            api_key=llm_config.get("api_key"),
+            base_url=llm_config.get("base_url"),
+            temperature=llm_config.get("temperature", 0.0),
+            model_info=llm_config.get("model_info"),
+        )
 
         # 创建日期解析智能体
-        self.date_agent = autogen.AssistantAgent(
-            name="日期解析智能体",
+        self.date_agent = AssistantAgent(
+            name="date_parser_agent",  # 使用英文名称
             system_message="""你是一个高级语义分析和日期格式化专家，负责识别文本中的日期信息。
 
 你的技能包括识别和计算相对时间表达，并将其转换为 `yyyy` 或 `yyyy-MM` 格式（年或年-月）。
@@ -39,13 +51,13 @@ class DateParser:
 
 只返回日期字符串，不要包含任何其他解释或文本。
 """,
-            llm_config=self.llm_config,
+            model_client=model_client,
         )
 
-    def parse_date(
+    async def parse_date_async(
         self, text: str, current_time: Optional[datetime] = None
     ) -> str:
-        """解析文本中的日期表达
+        """异步解析文本中的日期表达
 
         Args:
             text: 包含日期信息的文本
@@ -68,10 +80,11 @@ class DateParser:
 请只返回英文逗号`,`分隔的日期字符串，不要包含任何其他解释或文本。
 """
 
-        # 调用日期解析智能体
-        response = self.date_agent.generate_reply(
-            messages=[{"role": "user", "content": prompt}]
-        )
+        # 异步调用日期解析智能体
+        result = await self.date_agent.run(task=prompt)
+
+        # 从 TaskResult 对象中获取最后一次响应内容
+        response = result.messages[-1].content
 
         # 清理响应，确保只返回日期字符串
         response = response.strip()
@@ -81,3 +94,16 @@ class DateParser:
             return current_time.strftime("%Y")
 
         return response
+
+    def parse_date(self, text: str, current_time: Optional[datetime] = None) -> str:
+        """同步解析文本中的日期表达（兼容旧版接口）
+
+        Args:
+            text: 包含日期信息的文本S
+            current_time: 当前时间，默认为系统当前时间
+
+        Returns:
+            格式化的日期字符串，以英文逗号分隔
+        """
+        # 使用事件循环运行异步方法
+        return asyncio.run(self.parse_date_async(text, current_time))
