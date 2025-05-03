@@ -2,21 +2,26 @@
 AutoGen BI 智能体示例
 展示如何使用 BI 智能体进行多轮对话和信息收集
 """
-
+import os
 import asyncio
 import json
 import uuid
 from typing import Dict, Any, Optional
+from dotenv import load_dotenv
 
-from autogenchat_bi.bi_agent import BIAgent
+
+from ..core.bi_orchestrator import BIAgent
+
+# 加载环境变量
+load_dotenv()
 
 # 模型配置
 MODEL_CONFIG = {
     "config_list": [
         {
-            "model": "xop3qwen30b",  # 例如讯飞星火模型 ID
-            "api_key": "sk-FKrDEzhqNVFRSR7o759009732a174222B87cE83cA27aE470",
-            "base_url": "http://maas-api.cn-huabei-1.xf-yun.com/v1",
+            "model": os.getenv('OPENAI_API_MODEL','xop3qwen30b'),  # 例如讯飞星火模型 ID
+            "api_key": os.getenv('OPENAI_API_KEY',''),
+            "base_url": os.getenv('OPENAI_API_BASE_URL','http://maas-api.cn-huabei-1.xf-yun.com/v1'),
             "api_type": "openai",
             # 移除 extra_headers 中的 lora_id 参数
             "extra_body": {"search_disable": False, "show_ref_label": True, "lora_id": "0"},
@@ -116,8 +121,8 @@ async def main():
         if result["is_complete"] and result["extracted_params"]:
             print("\n提取的参数:")
             print(f"项目: {result['extracted_params'].get('precinctName', '未提供')}")
-            print(f"时间范围: {result['extracted_params'].get('current_date', '未提供')}")
-            print(f"指标: {', '.join(result['extracted_params'].get('targetName', ""))}")
+            print(f"时间字符串: {result['extracted_params'].get('current_date', '未提供')}")
+            print(f"指标: {result['extracted_params'].get('targetName', "")}")
 
 if __name__ == "__main__":
     asyncio.run(main())

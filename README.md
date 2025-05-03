@@ -38,6 +38,9 @@
 ## 快速开始
 
 ```bash
+# 0. 环境变量
+cp .env.example .env
+
 # 1. 安装依赖（推荐使用 uv）
 uv pip install -e .
 

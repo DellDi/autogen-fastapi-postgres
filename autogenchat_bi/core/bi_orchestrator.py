@@ -7,7 +7,9 @@ import json
 import uuid
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from autogenchat_bi.date_parser import DateParser
+from ..utils.date_parser import DateParser
+from .intent_agent import create_intent_agent
+from .collector_agent import create_collector_agent
 
 # 导入 AutoGen 组件
 import autogen
@@ -35,52 +37,20 @@ class BIAgent:
         # 初始化日期解析器
         self.date_parser = DateParser(llm_config=model_config)
 
+        # 初始化项目名称提取器
+        from autogenchat_bi.utils.project_extractor import ProjectExtractor
+        self.project_extractor = ProjectExtractor(llm_config=model_config)
+
         # 初始化智能体
         self._init_agents()
 
     def _init_agents(self):
         """初始化智能体"""
-        # 意图识别智能体
-        self.intent_agent = autogen.AssistantAgent(
-            name="意图识别智能体",
-            system_message="""你是一个专业的意图识别智能体，负责分析用户查询的意图。
+        # 创建意图识别智能体
+        self.intent_agent = create_intent_agent(self.model_config)
 
-            你需要判断用户查询是否属于 BI 查询，并识别查询中的关键信息：
-            1. 项目名称
-            2. 时间范围
-            3. 指标名称
-
-            如果信息不完整，你需要指出缺失的信息。
-
-            输出格式：
-            ```json
-            {
-                "intent": "bi_query" 或 "other",
-                "complete": true 或 false,
-                "missing_info": ["项目", "时间", "指标"] 中的一个或多个,
-                "precinctName": "项目名称1,项目名称2,...",
-                "current_date": "时间字符串",
-                "targetName": "指标名称"
-            }
-            ```
-            """,
-            llm_config=self.model_config,
-        )
-
-        # 信息收集智能体
-        self.collector_agent = autogen.AssistantAgent(
-            name="信息收集智能体",
-            system_message="""你是一个专业的信息收集智能体，负责收集 BI 查询所需的完整信息。
-
-            当用户查询缺少必要信息时，你需要向用户提问，收集缺失的信息：
-            1. 如果缺少项目名称，询问用户想查询哪个项目的数据
-            2. 如果缺少时间范围，询问用户想查询哪个时间段的数据
-            3. 如果缺少指标名称，询问用户想查询什么指标
-
-            你的提问应该简洁明了，一次只询问一个缺失信息。
-            """,
-            llm_config=self.model_config,
-        )
+        # 创建信息收集智能体
+        self.collector_agent = create_collector_agent(self.model_config)
 
         # 用户代理
         self.user_proxy = autogen.UserProxyAgent(
@@ -117,6 +87,11 @@ class BIAgent:
 
         # 1. 意图识别
         intent_result = self._analyze_intent(query_text, context)
+
+        # 2. 项目名称提取（无论意图如何，都尝试提取项目名称）
+        projects = self.project_extractor.extract_projects(query_text)
+        if projects:
+            intent_result["projects"] = projects
 
         # 如果不是 BI 查询，直接返回
         if intent_result.get("intent") != "bi_query":
