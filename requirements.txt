@@ -26,7 +26,6 @@ autogen-agentchat==0.5.2
     # via autogen-fastapi-postgres (pyproject.toml)
 autogen-core==0.5.2
     # via
-    #   autogen-fastapi-postgres (pyproject.toml)
     #   autogen-agentchat
     #   autogen-ext
 autogen-ext==0.5.2

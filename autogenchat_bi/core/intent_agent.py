@@ -9,8 +9,8 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 class IntentAgent(AssistantAgent):
     """意图识别智能体"""
-    def __init__(self, name: str, system_message: str, model_client: Any):
-        super().__init__(name=name, system_message=system_message, model_client=model_client)
+    def __init__(self, name: str, description: str, system_message: str, model_client: Any, model_client_stream: bool = False):
+        super().__init__(name=name, description=description, system_message=system_message, model_client=model_client, model_client_stream=model_client_stream)
 
 DEFAULT_INTENT_SYSTEM_MESSAGE = """你是一个专业的意图识别智能体，负责分析用户查询的意图。
 
@@ -34,9 +34,11 @@ DEFAULT_INTENT_SYSTEM_MESSAGE = """你是一个专业的意图识别智能体，
 ```
 """
 
-def create_intent_agent(llm_config: Dict[str, Any]) -> IntentAgent:
+def create_intent_agent(llm_config: Dict[str, Any], use_stream_mode: bool = False) -> IntentAgent:
     """创建意图识别智能体实例"""
     # 创建模型客户端
+    # 百炼 API 需要流式模式，但我们不能直接设置 stream=True
+    # 我们需要在 create 方法调用时设置流式模式
     model_client = OpenAIChatCompletionClient(
         model=llm_config.get("model", "gpt-4o"),
         api_key=llm_config.get("api_key"),
@@ -56,4 +58,5 @@ def create_intent_agent(llm_config: Dict[str, Any]) -> IntentAgent:
         description="意图识别智能体",
         system_message=DEFAULT_INTENT_SYSTEM_MESSAGE,
         model_client=model_client,
+        model_client_stream=use_stream_mode,
     )

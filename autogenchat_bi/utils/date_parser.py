@@ -9,6 +9,7 @@ import json
 
 # 导入最新版 AutoGen 组件
 from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.ui import Console
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 
@@ -23,6 +24,7 @@ class DateParser:
         """
         # 保存原始配置
         self.llm_config = llm_config
+        self.use_stream_mode = llm_config.get("use_stream_mode", True)
 
         # 创建模型客户端
         model_client = OpenAIChatCompletionClient(
@@ -53,6 +55,7 @@ class DateParser:
 只返回日期字符串，不要包含任何其他解释或文本。
 """,
             model_client=model_client,
+            model_client_stream=self.use_stream_mode,
         )
 
     async def parse_date_async(
@@ -81,10 +84,29 @@ class DateParser:
 请只返回英文逗号`,`分隔的日期字符串，不要包含任何其他解释或文本。
 """
 
-        # 异步调用日期解析智能体
-        result = await self.date_agent.run(task=prompt)
+        # 检查配置是否启用流式模式
+        use_stream_mode = self.llm_config.get("use_stream_mode", True)  # 默认启用流式模式
+        print_stream_output = self.llm_config.get("print_stream_output", False)  # 默认不打印
 
-        # 从 TaskResult 对象中获取最后一次响应内容
+        if use_stream_mode:
+            # 使用流式模式
+            print("[日期解析] 使用流式模式...")
+
+            # 准备流式输出生成器
+            stream_generator = self.date_agent.run_stream(task=prompt)
+
+            # 使用 Console 类处理流式输出并获取结果
+            if print_stream_output:
+                print("[日期解析] 流式输出开始:")
+                result = await Console(stream_generator, output_stats=True)
+            else:
+                result = await Console(stream_generator, output_stats=False)
+        else:
+            # 使用非流式模式
+            print("[日期解析] 使用非流式模式...")
+            result = await self.date_agent.run(task=prompt)
+
+        # 从结果中获取最后一条消息的内容
         response = result.messages[-1].content
 
         # 清理响应，确保只返回日期字符串

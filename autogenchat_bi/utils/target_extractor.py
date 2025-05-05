@@ -15,6 +15,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 import chromadb
 from chromadb.utils import embedding_functions
 from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.ui import Console
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 
@@ -43,6 +44,7 @@ class TargetExtractor:
             cache_ttl: 缓存过期时间，默认3600秒（1小时）
         """
         self.llm_config = llm_config
+        self.use_stream_mode = llm_config.get("use_stream_mode", True)
         self.docs_dir = docs_dir
         self.db_path = db_path
         self.cache_size = cache_size
@@ -58,6 +60,8 @@ class TargetExtractor:
         self._load_metadata()
 
         # 创建模型客户端
+        # 百炼 API 需要流式模式，但我们不能直接设置 stream=True
+        # 我们需要在 create 方法调用时设置流式模式
         model_client = OpenAIChatCompletionClient(
             model=llm_config.get("model", "gpt-4o"),
             api_key=llm_config.get("api_key"),
@@ -79,6 +83,7 @@ class TargetExtractor:
 2. 禁止回复其他内容，不要给用户选择
 """,
             model_client=model_client,
+            model_client_stream=self.use_stream_mode,
         )
 
         # 初始化ChromaDB客户端
@@ -444,10 +449,29 @@ class TargetExtractor:
 用户输入: "{query_text}"
 """
 
-        # 异步调用标准指标名称解析智能体
-        result = await self.target_agent.run(task=prompt)
+        # 检查配置是否启用流式模式
+        use_stream_mode = self.llm_config.get("use_stream_mode", True)  # 默认启用流式模式
+        print_stream_output = self.llm_config.get("print_stream_output", False)  # 默认不打印
 
-        # 从 TaskResult 对象中获取响应内容
+        if use_stream_mode:
+            # 使用流式模式
+            print("[指标提取] 使用流式模式...")
+
+            # 准备流式输出生成器
+            stream_generator = self.target_agent.run_stream(task=prompt)
+
+            # 使用 Console 类处理流式输出并获取结果
+            if print_stream_output:
+                print("[指标提取] 流式输出开始:")
+                result = await Console(stream_generator, output_stats=True)
+            else:
+                result = await Console(stream_generator, output_stats=False)
+        else:
+            # 使用非流式模式
+            print("[指标提取] 使用非流式模式...")
+            result = await self.target_agent.run(task=prompt)
+
+        # 从结果中获取最后一条消息的内容
         response = result.messages[-1].content
 
         # 清理响应，确保只返回标准指标名称

@@ -2,22 +2,23 @@
 BI 智能体模块
 基于 AutoGen 框架实现 BI 查询智能体
 """
-
+import os
 import json
 import uuid
 import asyncio
-import os
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+
+# 导入 AutoGen 组件
+from autogen_agentchat.ui import Console
+from autogen_agentchat.agents import UserProxyAgent
+
+# 导入项目组件
+from autogenchat_bi.utils.project_extractor import ProjectExtractor
 from autogenchat_bi.utils.date_parser import DateParser
 from autogenchat_bi.utils.target_extractor import TargetExtractor
 from autogenchat_bi.core.intent_agent import create_intent_agent
 from autogenchat_bi.core.collector_agent import create_collector_agent
-
-# 导入最新版 AutoGen 组件
-from autogen_agentchat.agents import UserProxyAgent
-from autogen_ext.models.openai import OpenAIChatCompletionClient
-
 
 class BIAgent:
     """BI 智能体类
@@ -38,16 +39,19 @@ class BIAgent:
         self.conversation_id = conversation_id or str(uuid.uuid4())
         self.conversation_history = []
 
+        # 是否启用流式模式，默认为 True，支持百炼 API 的流式模式要求
+        # 如果使用的是支持非流式模式的 API，可以设置为 False
+        self.use_stream_mode = model_config.get("use_stream_mode", True)
+        # 是否打印流式输出，默认为 False
+        self.print_stream_output = model_config.get("print_stream_output", False)
+
         # 初始化日期解析器
         self.date_parser = DateParser(llm_config=model_config)
 
         # 初始化项目名称提取器
-        from autogenchat_bi.utils.project_extractor import ProjectExtractor
-
         self.project_extractor = ProjectExtractor(llm_config=model_config)
 
-        # 初始化标准指标名称解析器
-        # 获取文档目录和数据库路径
+        # 初始化标准指标名称解析器、获取文档目录和数据库路径
         docs_dir = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), "target-docs"
         )
@@ -62,10 +66,10 @@ class BIAgent:
     def _init_agents(self):
         """初始化智能体"""
         # 创建意图识别智能体
-        self.intent_agent = create_intent_agent(self.model_config)
+        self.intent_agent = create_intent_agent(self.model_config, self.use_stream_mode)
 
         # 创建信息收集智能体
-        self.collector_agent = create_collector_agent(self.model_config)
+        self.collector_agent = create_collector_agent(self.model_config, self.use_stream_mode)
 
         # 用户代理
         self.user_proxy = UserProxyAgent(
@@ -243,10 +247,30 @@ class BIAgent:
             请判断这是否是一个指标数据查询，如果是，请提取关键信息。
             """
 
-        # 异步调用意图识别智能体
-        result = await self.intent_agent.run(task=prompt)
-        # 从 TaskResult 对象中获取最后一次响应内容
-        response = result.messages[-1].content
+        # 根据配置选择使用流式或非流式模式
+        if self.use_stream_mode:
+            print("[意图识别] 使用流式模式...")
+
+            # 准备流式输出生成器
+            stream_generator = self.intent_agent.run_stream(task=prompt)
+
+            # 使用 Console 类处理流式输出并获取结果，无论是否打印
+            if self.print_stream_output:
+                print("[意图识别] 流式输出开始:")
+                # 显示消息
+                result = await Console(stream_generator, output_stats=True)
+            else:
+                # 不显示消息，但仍然使用 Console 处理流式输出
+                result = await Console(stream_generator, output_stats=False)
+
+            # 从结果中获取最后一条消息的内容
+            response = result.messages[-1].content
+        else:
+            print("[意图识别] 使用非流式模式...")
+            # 使用传统的 run 方法
+            result = await self.intent_agent.run(task=prompt)
+            # 从 TaskResult 对象中获取最后一次响应内容
+            response = result.messages[-1].content
         # 解析响应
         try:
             # 尝试从响应中提取 JSON
@@ -301,11 +325,30 @@ class BIAgent:
         请帮助收集缺失的信息，并生成合适的提问。
         """
 
-        # 异步调用信息收集智能体
-        result = await self.collector_agent.run(task=prompt)
+        # 根据配置选择使用流式或非流式模式
+        if self.use_stream_mode:
+            print("[信息收集] 使用流式模式...")
 
-        # 从 TaskResult 对象中获取最后一次响应内容
-        response = result.messages[-1].content
+            # 准备流式输出生成器
+            stream_generator = self.collector_agent.run_stream(task=prompt)
+
+            # 使用 Console 类处理流式输出并获取结果，无论是否打印
+            if self.print_stream_output:
+                print("[信息收集] 流式输出开始:")
+                # 显示消息
+                result = await Console(stream_generator, output_stats=True)
+            else:
+                # 不显示消息，但仍然使用 Console 处理流式输出
+                result = await Console(stream_generator, output_stats=False)
+
+            # 从结果中获取最后一条消息的内容
+            response = result.messages[-1].content
+        else:
+            print("[信息收集] 使用非流式模式...")
+            # 使用传统的 run 方法
+            result = await self.collector_agent.run(task=prompt)
+            # 从 TaskResult 对象中获取最后一次响应内容
+            response = result.messages[-1].content
 
         return {
             "response": response,

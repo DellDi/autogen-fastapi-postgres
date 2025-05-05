@@ -9,6 +9,7 @@ import json
 
 # 导入最新版 AutoGen 组件
 from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.ui import Console
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 
@@ -26,6 +27,7 @@ class ProjectExtractor:
             llm_config: 语言模型配置，包含API密钥、基础URL等
         """
         self.llm_config = llm_config
+        self.use_stream_mode = llm_config.get("use_stream_mode", True)
 
         # 创建模型客户端
         model_client = OpenAIChatCompletionClient(
@@ -60,6 +62,7 @@ class ProjectExtractor:
 - 输入："成都高新园区和天府新区的收入情况" -> 成都高新,天府新区
 """,
             model_client=model_client,
+            model_client_stream=self.use_stream_mode,
         )
 
     async def extract_projects_async(self, text: str) -> str:
@@ -80,10 +83,29 @@ class ProjectExtractor:
 如果没有找到项目名称，请返回空字符串。
 """
 
-        # 异步调用项目名称提取智能体
-        result = await self.project_agent.run(task=prompt)
+        # 检查配置是否启用流式模式
+        use_stream_mode = self.llm_config.get("use_stream_mode", True)  # 默认启用流式模式
+        print_stream_output = self.llm_config.get("print_stream_output", False)  # 默认不打印
 
-        # 从 TaskResult 对象中获取响应内容
+        if use_stream_mode:
+            # 使用流式模式
+            print("[项目提取] 使用流式模式...")
+
+            # 准备流式输出生成器
+            stream_generator = self.project_agent.run_stream(task=prompt)
+
+            # 使用 Console 类处理流式输出并获取结果
+            if print_stream_output:
+                print("[项目提取] 流式输出开始:")
+                result = await Console(stream_generator, output_stats=True)
+            else:
+                result = await Console(stream_generator, output_stats=False)
+        else:
+            # 使用非流式模式
+            print("[项目提取] 使用非流式模式...")
+            result = await self.project_agent.run(task=prompt)
+
+        # 从结果中获取最后一条消息的内容
         response = result.messages[-1].content
 
         # 清理响应，确保只返回项目名称字符串

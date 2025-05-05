@@ -10,9 +10,9 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 class CollectorAgent(AssistantAgent):
     """信息收集智能体"""
 
-    def __init__(self, name: str, system_message: str, model_client: Any):
+    def __init__(self, name: str, description: str, system_message: str, model_client: Any, model_client_stream: bool = False):
         super().__init__(
-            name=name, system_message=system_message, model_client=model_client
+            name=name, description=description, system_message=system_message, model_client=model_client, model_client_stream=model_client_stream
         )
 
 
@@ -28,9 +28,11 @@ DEFAULT_COLLECTOR_SYSTEM_MESSAGE = """你是一个专业的信息收集智能体
 """
 
 
-def create_collector_agent(llm_config: Dict[str, Any]) -> CollectorAgent:
+def create_collector_agent(llm_config: Dict[str, Any], use_stream_mode: bool = False) -> CollectorAgent:
     """创建信息收集智能体实例"""
     # 创建模型客户端
+    # 百炼 API 需要流式模式，但我们不能直接设置 stream=True
+    # 我们需要在 create 方法调用时设置流式模式
     model_client = OpenAIChatCompletionClient(
         model=llm_config.get("model", "gpt-4o"),
         api_key=llm_config.get("api_key"),
@@ -44,4 +46,5 @@ def create_collector_agent(llm_config: Dict[str, Any]) -> CollectorAgent:
         description="信息收集智能体",
         system_message=DEFAULT_COLLECTOR_SYSTEM_MESSAGE,
         model_client=model_client,
+        model_client_stream=use_stream_mode,
     )
