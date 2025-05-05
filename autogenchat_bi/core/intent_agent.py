@@ -53,6 +53,7 @@ def create_intent_agent(llm_config: Dict[str, Any]) -> IntentAgent:
 
     return IntentAgent(
         name="intent_agent",
+        description="意图识别智能体",
         system_message=DEFAULT_INTENT_SYSTEM_MESSAGE,
         model_client=model_client,
     )

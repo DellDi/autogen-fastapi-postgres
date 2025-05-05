@@ -6,14 +6,17 @@ BI 智能体模块
 import json
 import uuid
 import asyncio
+import os
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from autogenchat_bi.utils.date_parser import DateParser
+from autogenchat_bi.utils.target_extractor import TargetExtractor
 from autogenchat_bi.core.intent_agent import create_intent_agent
 from autogenchat_bi.core.collector_agent import create_collector_agent
 
 # 导入最新版 AutoGen 组件
 from autogen_agentchat.agents import UserProxyAgent
+from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 
 class BIAgent:
@@ -42,6 +45,16 @@ class BIAgent:
         from autogenchat_bi.utils.project_extractor import ProjectExtractor
 
         self.project_extractor = ProjectExtractor(llm_config=model_config)
+
+        # 初始化标准指标名称解析器
+        # 获取文档目录和数据库路径
+        docs_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "target-docs"
+        )
+        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "chroma_db")
+        self.target_extractor = TargetExtractor(
+            llm_config=model_config, docs_dir=docs_dir, db_path=db_path
+        )
 
         # 初始化智能体
         self._init_agents()
@@ -146,10 +159,38 @@ class BIAgent:
 
         # 3. 信息完整，准备调用外部 API
         # 注意：实际的 API 调用由外部实现，这里只返回提取的参数
+
+        # 使用标准指标名称解析器对指标名称进行标准化
+        original_target_name = intent_result.get("targetName", "")
+        if original_target_name:
+            try:
+                # 异步提取标准指标名称
+                standardized_target_name = (
+                    await self.target_extractor.extract_target_async(
+                        original_target_name
+                    )
+                )
+                if standardized_target_name:
+                    # 如果成功提取到标准指标名称，替换原始指标名称
+                    intent_result["targetName"] = standardized_target_name
+                    # 记录标准化过程
+                    self.conversation_history.append(
+                        {
+                            "role": "system",
+                            "content": f"指标名称标准化: '{original_target_name}' -> '{standardized_target_name}'",
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    )
+            except Exception as e:
+                # 如果标准化过程出错，使用原始指标名称
+                print(f"Error standardizing target name: {e}")
+
         extracted_params = {
             "precinctName": intent_result.get("precinctName"),
             "current_date": intent_result.get("current_date"),  # 使用解析后的日期
-            "targetName": intent_result.get("targetName", ""),
+            "targetName": intent_result.get(
+                "targetName", ""
+            ),  # 可能是标准化后的指标名称
         }
 
         # 添加系统消息到对话历史（记录提取的参数）
@@ -236,20 +277,6 @@ class BIAgent:
                 "complete": False,
                 "missing_info": ["precinctName", "current_date", "targetName"],
             }
-
-    def _analyze_intent(
-        self, query_text: str, context: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """同步分析用户查询意图（兼容旧版接口）
-
-        Args:
-            query_text: 用户查询文本
-            context: 上下文信息
-
-        Returns:
-            意图分析结果
-        """
-        return asyncio.run(self._analyze_intent_async(query_text, context))
 
     async def _collect_info_async(
         self, query_text: str, missing_info: List[str], collected_info: Dict[str, Any]

@@ -23,7 +23,8 @@ DEFAULT_COLLECTOR_SYSTEM_MESSAGE = """你是一个专业的信息收集智能体
 2. 如果缺少时间字符串，询问用户想查询哪个时间段的数据
 3. 如果缺少指标名称，询问用户想查询什么指标
 
-你的提问应该简洁明了，一次只询问一个缺失信息。
+你的提问应该简洁明了，对于缺失的信息可以询问多个。
+
 """
 
 
@@ -40,6 +41,7 @@ def create_collector_agent(llm_config: Dict[str, Any]) -> CollectorAgent:
 
     return CollectorAgent(
         name="collector_agent",
+        description="信息收集智能体",
         system_message=DEFAULT_COLLECTOR_SYSTEM_MESSAGE,
         model_client=model_client,
     )

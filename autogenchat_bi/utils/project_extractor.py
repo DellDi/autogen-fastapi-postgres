@@ -11,6 +11,7 @@ import json
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
+
 class ProjectExtractor:
     """项目名称提取器
 
@@ -31,12 +32,14 @@ class ProjectExtractor:
             model=llm_config.get("model", "gpt-4o"),
             api_key=llm_config.get("api_key"),
             base_url=llm_config.get("base_url"),
-            temperature=llm_config.get("temperature", 0.0),model_info=llm_config.get("model_info"),
+            temperature=llm_config.get("temperature", 0.0),
+            model_info=llm_config.get("model_info"),
         )
 
         # 创建项目名称提取智能体
         self.project_agent = AssistantAgent(
             name="project_extractor_agent",  # 使用英文名称
+            description="项目名称提取智能体",
             system_message="""你是一个专业的项目名称提取专家，负责从文本中识别和提取项目名称。
 
 你的任务是从用户输入的文本中提取出所有项目名称，并遵循以下规则：
@@ -45,7 +48,7 @@ class ProjectExtractor:
 3. 能够识别常见的项目命名模式，如：
    - 地域前缀：华东、华南、华西、华北、华中
    - 方位词：东部、南区、西部、北区、中部
-   - 城市简称：京、津、沪、渝、蓬、穗、汉等
+   - 城市简称：京、津、沪、渝等
    - 物业关键词：物业、小区、园区、广场、大厦、中心、花园、公寓等
 
 只返回英文逗号分隔的项目名称列表，不要包含任何其他解释或文本。
@@ -81,8 +84,8 @@ class ProjectExtractor:
         result = await self.project_agent.run(task=prompt)
 
         # 从 TaskResult 对象中获取响应内容
-        response = str(result)
-        
+        response = result.messages[-1].content
+
         # 清理响应，确保只返回项目名称字符串
         response = response.strip()
 

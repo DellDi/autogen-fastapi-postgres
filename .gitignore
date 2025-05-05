@@ -13,3 +13,8 @@ wheels/
 # vanna
 vanna/
 
+# autogenchat_bi
+autogenchat_bi/target-docs/
+autogenchat_bi/chroma_db/
+
+

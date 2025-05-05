@@ -9,7 +9,6 @@
 import os
 import asyncio
 import json
-from autogen_core.models import ModelFamily
 from dotenv import load_dotenv
 from autogenchat_bi.core.bi_orchestrator import BIAgent
 
@@ -41,8 +40,8 @@ async def main():
 
     # 示例查询
     queries = [
-        "华东物业的2024年物业费收缴率是多少？",
-        "我想知道成都高新园区去年的收入情况",
+        "华东物业的去年的收缴率是多少？",
+        "我想知道成都高新园区去年的旧欠是多少？",
         "帮我查一下最近三年的财务报表",
     ]
 

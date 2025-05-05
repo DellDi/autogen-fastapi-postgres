@@ -17,7 +17,9 @@ dependencies = [
     "alembic",
     "asyncpg",
     "greenlet",
-    "python-dotenv"
+    "python-dotenv",
+    "chromadb",
+    "sentence-transformers"
 ]
 
 [tool.alembic]

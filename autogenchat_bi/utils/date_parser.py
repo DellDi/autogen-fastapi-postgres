@@ -36,6 +36,7 @@ class DateParser:
         # 创建日期解析智能体
         self.date_agent = AssistantAgent(
             name="date_parser_agent",  # 使用英文名称
+            description="日期解析智能体",
             system_message="""你是一个高级语义分析和日期格式化专家，负责识别文本中的日期信息。
 
 你的技能包括识别和计算相对时间表达，并将其转换为 `yyyy` 或 `yyyy-MM` 格式（年或年-月）。
