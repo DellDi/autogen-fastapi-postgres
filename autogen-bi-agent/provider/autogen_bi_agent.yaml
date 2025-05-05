@@ -1,0 +1,9 @@
+identity:
+  name: autogen_bi_agent
+  author: AutoGen BI Team
+  label:
+    en_US: AutoGen BI Agent
+    zh_Hans: AutoGen BI 智能体
+description:
+  en_US: "A BI query agent based on AutoGen framework, focusing on multi-turn dialogue, intent recognition and information collection"
+  zh_Hans: "基于 AutoGen 框架的 BI 查询智能体，专注于多轮对话、意图识别和信息收集功能"

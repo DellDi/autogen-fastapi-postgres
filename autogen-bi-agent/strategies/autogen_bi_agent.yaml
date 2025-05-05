@@ -1,0 +1,52 @@
+identity:
+  name: autogen_bi_agent
+  author: AutoGen BI Team
+  label:
+    en_US: BI Parameter Extraction
+    zh_Hans: BI参数提取
+description:
+  en_US: "A BI query agent that can recognize user intent, collect necessary information, and extract standard indicator names"
+  zh_Hans: "专注于 BI 查询的智能体，可以识别用户意图，收集必要信息，并提取标准指标名称"
+features:
+  - history-messages  # 启用历史消息功能
+parameters:
+  - name: model
+    type: model-selector
+    scope: tool-call&llm
+    required: true
+    label:
+      en_US: Model
+      zh_Hans: 模型
+  - name: tools
+    type: array[tools]
+    required: false
+    label:
+      en_US: Tools list
+      zh_Hans: 工具列表
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query
+      zh_Hans: 查询
+  - name: maximum_iterations
+    type: number
+    required: false
+    default: 5
+    label:
+      en_US: Maximum Iterations
+      zh_Hans: 最大迭代次数
+    max: 50
+    min: 1
+  - name: conversation_id
+    type: string
+    required: false
+    label:
+      en_US: Conversation ID
+      zh_Hans: 对话ID
+    description:
+      en_US: "Conversation ID for multi-turn dialogue memory"
+      zh_Hans: "对话 ID，用于多轮对话记忆"
+extra:
+  python:
+    source: strategies/autogen_bi_agent.py

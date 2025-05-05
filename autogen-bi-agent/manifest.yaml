@@ -1,0 +1,6 @@
+name: "AutoGen BI Agent"
+version: "0.3.0"
+author: "AutoGen BI Team"
+email: "example@example.com"
+description: "基于 AutoGen 框架的 BI 查询智能体，专注于多轮对话、意图识别和信息收集功能"
+license: "MIT"

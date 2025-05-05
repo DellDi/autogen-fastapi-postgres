@@ -11,7 +11,6 @@ import os
 import asyncio
 import json
 import argparse
-from typing import Dict, Any
 from dotenv import load_dotenv
 from autogenchat_bi.core.bi_orchestrator import BIAgent
 
@@ -21,8 +20,8 @@ def parse_args():
     parser.add_argument(
         "--stream",
         action="store_true",
-        default=True,
-        help="是否启用流式模式，默认为 True"
+        default=False,
+        help="是否启用流式模式，默认为 False"
     )
     parser.add_argument(
         "--no-stream",
@@ -58,10 +57,6 @@ async def main():
             "OPENAI_API_BASE_URL", "http://maas-api.cn-huabei-1.xf-yun.com/v1"
         ),  # 本地开发使用的是讯飞maas平台的相关qwen30b模型
         "temperature": 0.3,
-        # 百炼 API 需要流式模式，我们需要在 extra_body 中设置
-        "extra_body": {
-            "stream": True,  # 启用流式模式，支持百炼等只支持流式的模型
-        },
         "model_info": {
             "vision": True,
             "function_calling": True,

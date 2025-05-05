@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆 -->
+  <circle cx="64" cy="64" r="60" fill="#4F46E5" />
+  
+  <!-- BI 文字 -->
+  <text x="64" y="64" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">BI</text>
+  
+  <!-- 外环 -->
+  <circle cx="64" cy="64" r="54" stroke="white" stroke-width="2" fill="none" />
+  
+  <!-- 数据图表元素 -->
+  <rect x="40" y="80" width="8" height="16" rx="2" fill="white" />
+  <rect x="52" y="72" width="8" height="24" rx="2" fill="white" />
+  <rect x="64" y="76" width="8" height="20" rx="2" fill="white" />
+  <rect x="76" y="68" width="8" height="28" rx="2" fill="white" />
+  
+  <!-- 连接线 -->
+  <path d="M44 80L60 76L72 68L80 68" stroke="white" stroke-width="2" fill="none" />
+  
+  <!-- 对话气泡 -->
+  <path d="M32 40C32 35.5817 35.5817 32 40 32H88C92.4183 32 96 35.5817 96 40V48C96 52.4183 92.4183 56 88 56H70L64 64L58 56H40C35.5817 56 32 52.4183 32 48V40Z" fill="white" fill-opacity="0.3" />
+</svg>
