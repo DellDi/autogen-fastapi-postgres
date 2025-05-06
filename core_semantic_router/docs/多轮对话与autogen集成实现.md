@@ -57,9 +57,9 @@ class DialogContext:
 
 ### 3.2 autogen集成伪代码
 ```python
-from autogen.agentchat import Agent
+from autogen_agentchat.agents import AssistantAgent
 
-class MyAgent(Agent):
+class MyAgent(AssistantAgent):
     def run(self, message: str, context: DialogContext) -> str:
         # 解析context，处理业务
         ...
