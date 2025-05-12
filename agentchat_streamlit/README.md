@@ -41,6 +41,9 @@ config:
 
 运行如下命令启动 Streamlit 网页应用：
 ```bash
+# 首先复制 model_config.template.yaml 为 model_config.yaml
+cp model_config.template.yaml model_config.yaml
+# 然后修改 model_config.yaml 中的配置
 streamlit run main.py
 ```
 

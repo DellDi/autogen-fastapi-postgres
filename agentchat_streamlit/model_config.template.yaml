@@ -1,0 +1,12 @@
+# Use Open AI with key
+provider: autogen_ext.models.openai.OpenAIChatCompletionClient
+config:
+  model: qwen3-30b-a3b
+  api_key: sk-xxx
+  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  model_info:
+    vision: false
+    function_calling: true
+    json_output: true
+    family: unknown
+    structured_output: true

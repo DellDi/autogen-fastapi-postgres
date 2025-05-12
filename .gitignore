@@ -6,6 +6,8 @@ dist/
 wheels/
 *.egg-info
 
+model_config.yaml
+
 # Virtual environments
 .venv
 .env
